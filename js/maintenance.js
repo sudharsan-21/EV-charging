@@ -7,6 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
   populateChargerOptions();
   renderMaintenanceTable();
 
+  window.addEventListener('evDataSynced', () => {
+    populateChargerOptions();
+    renderMaintenanceTable();
+  });
+
   // Search & Filters
   const searchInput = document.getElementById('maintSearchKeyword');
   const statusSelect = document.getElementById('maintFilterStatus');

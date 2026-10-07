@@ -28,6 +28,11 @@ let activeSim = {
 document.addEventListener('DOMContentLoaded', () => {
   initNewSessionModalOptions();
   renderSessionsTable();
+
+  window.addEventListener('evDataSynced', () => {
+    initNewSessionModalOptions();
+    renderSessionsTable();
+  });
   startLiveSimulationTimer();
 
   // Button controls

@@ -7,6 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initReservationModalData();
   renderReservationsTable();
 
+  window.addEventListener('evDataSynced', () => {
+    initReservationModalData();
+    renderReservationsTable();
+  });
+
   // Search & filter events
   const searchInput = document.getElementById('resSearchKeyword');
   const statusSelect = document.getElementById('resFilterStatus');

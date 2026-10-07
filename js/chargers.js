@@ -7,6 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
   populateStationFilterOptions();
   renderChargersTable();
 
+  window.addEventListener('evDataSynced', () => {
+    populateStationFilterOptions();
+    renderChargersTable();
+  });
+
   // Filter listeners
   const keywordInput = document.getElementById('chargerSearchKeyword');
   const stationSelect = document.getElementById('filterChargerStation');

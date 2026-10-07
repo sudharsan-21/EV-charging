@@ -9,6 +9,10 @@ let activeCategoryFilter = 'all';
 document.addEventListener('DOMContentLoaded', () => {
   renderVehiclesList();
 
+  window.addEventListener('evDataSynced', () => {
+    renderVehiclesList();
+  });
+
   const searchInput = document.getElementById('vehicleSearchKeyword');
   if (searchInput) {
     searchInput.addEventListener('input', renderVehiclesList);

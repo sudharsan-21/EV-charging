@@ -6,6 +6,10 @@
 document.addEventListener('DOMContentLoaded', () => {
   renderStationsList();
 
+  window.addEventListener('evDataSynced', () => {
+    renderStationsList();
+  });
+
   // Search & Filter event listeners
   const keywordInput = document.getElementById('filterStationKeyword');
   const citySelect = document.getElementById('filterStationCity');

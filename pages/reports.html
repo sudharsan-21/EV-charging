@@ -254,23 +254,200 @@
   <script src="../js/app.js"></script>
 
   <script>
+    let peakChartInstance = null;
+    let revChartInstance = null;
+
     document.addEventListener('DOMContentLoaded', () => {
-      renderPeakHoursChart();
-      renderStationRevenueChart();
-      populateAllReportTables();
+      if (window.location.protocol.startsWith('http')) {
+        loadReportsFromAPI();
+      } else {
+        renderPeakHoursChart();
+        renderStationRevenueChart();
+        populateAllReportTables();
+      }
     });
 
-    function renderPeakHoursChart() {
+    async function loadReportsFromAPI() {
+      try {
+        // 1. Analytics for charts
+        const resAnalytics = await fetch('../api/reports.php?type=analytics');
+        const jsonAnalytics = await resAnalytics.json();
+        if (jsonAnalytics.success && jsonAnalytics.data) {
+          renderPeakHoursChart(jsonAnalytics.data.peak_hours);
+          renderStationRevenueChart(jsonAnalytics.data.station_revenues);
+        } else {
+          renderPeakHoursChart();
+          renderStationRevenueChart();
+        }
+
+        // 2. Sessions table
+        const resSessions = await fetch('../api/reports.php?type=sessions');
+        const jsonSessions = await resSessions.json();
+        if (jsonSessions.success && jsonSessions.data) {
+          renderSessionsFromData(jsonSessions.data);
+        }
+
+        // 3. Energy table
+        const resEnergy = await fetch('../api/reports.php?type=energy');
+        const jsonEnergy = await resEnergy.json();
+        if (jsonEnergy.success && jsonEnergy.data) {
+          renderEnergyFromData(jsonEnergy.data);
+        }
+
+        // 4. Revenue table
+        const resRevenue = await fetch('../api/reports.php?type=revenue');
+        const jsonRevenue = await resRevenue.json();
+        if (jsonRevenue.success && jsonRevenue.data) {
+          renderRevenueFromData(jsonRevenue.data);
+        }
+
+        // 5. Utilization table
+        const resUtil = await fetch('../api/reports.php?type=utilization');
+        const jsonUtil = await resUtil.json();
+        if (jsonUtil.success && jsonUtil.data) {
+          renderUtilFromData(jsonUtil.data);
+        }
+
+        // 6. Maintenance table
+        const resMaint = await fetch('../api/reports.php?type=maintenance');
+        const jsonMaint = await resMaint.json();
+        if (jsonMaint.success && jsonMaint.data) {
+          renderMaintFromData(jsonMaint.data);
+        }
+      } catch (err) {
+        console.warn('API fetch failed, falling back to local dataset:', err);
+        renderPeakHoursChart();
+        renderStationRevenueChart();
+        populateAllReportTables();
+      }
+    }
+
+    function renderSessionsFromData(data) {
+      const tbSessions = document.querySelector('#reportSessionsTable tbody');
+      if (!tbSessions) return;
+      let html = '';
+      data.forEach(s => {
+        html += `
+          <tr>
+            <td class="font-monospace fw-bold">${s.session_code || s.session_id}</td>
+            <td>${s.customer_name}</td>
+            <td>${s.station_name}</td>
+            <td><span class="badge bg-light text-dark border font-monospace">${s.charger_code}</span></td>
+            <td class="font-monospace">${s.energy_consumed} kWh</td>
+            <td class="font-monospace">${s.duration_minutes} mins</td>
+            <td class="font-monospace">${formatCurrency(s.energy_cost)}</td>
+            <td class="font-monospace fw-bold text-success">${formatCurrency(s.total_cost)}</td>
+          </tr>
+        `;
+      });
+      tbSessions.innerHTML = html;
+    }
+
+    function renderEnergyFromData(data) {
+      const tbEnergy = document.querySelector('#reportEnergyTable tbody');
+      if (!tbEnergy) return;
+      let html = '';
+      data.slice(0, 15).forEach(e => {
+        html += `
+          <tr>
+            <td>${e.station_name}</td>
+            <td class="font-monospace fw-bold">${e.charger_code}</td>
+            <td><span class="badge bg-light text-dark border">${e.connector_type}</span></td>
+            <td class="font-monospace fw-semibold text-primary">${e.total_energy_kwh} kWh</td>
+            <td class="font-monospace">${e.charging_power} kW</td>
+            <td>Last 30 Days</td>
+          </tr>
+        `;
+      });
+      tbEnergy.innerHTML = html;
+    }
+
+    function renderRevenueFromData(data) {
+      const tbRevenue = document.querySelector('#reportRevenueTable tbody');
+      if (!tbRevenue) return;
+      let html = '';
+      data.forEach(r => {
+        html += `
+          <tr>
+            <td class="fw-bold">${r.station_name}</td>
+            <td>${r.city}</td>
+            <td class="font-monospace">₹${parseFloat(r.tariff_rate).toFixed(2)}/kWh</td>
+            <td class="font-monospace">${r.completed_sessions}</td>
+            <td class="font-monospace">${parseFloat(r.total_energy_kwh).toFixed(1)} kWh</td>
+            <td class="font-monospace fw-bold text-success">${formatCurrency(r.gross_revenue)}</td>
+          </tr>
+        `;
+      });
+      tbRevenue.innerHTML = html;
+    }
+
+    function renderUtilFromData(data) {
+      const tbUtil = document.querySelector('#reportUtilTable tbody');
+      if (!tbUtil) return;
+      let html = '';
+      data.slice(0, 15).forEach(u => {
+        const util = parseFloat(u.utilization_rate);
+        let ratingBadge = `<span class="badge bg-secondary font-monospace">Low (<40%)</span>`;
+        if (util >= 75) ratingBadge = `<span class="badge bg-danger font-monospace">High (≥75%)</span>`;
+        else if (util >= 40) ratingBadge = `<span class="badge bg-success font-monospace">Optimal</span>`;
+
+        html += `
+          <tr>
+            <td class="font-monospace fw-bold">${u.charger_code}</td>
+            <td>${u.station_name}</td>
+            <td>${u.connector_type} • ${u.charging_power} kW</td>
+            <td class="font-monospace">24 hrs</td>
+            <td class="font-monospace">${u.total_hours_used} hrs</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <span class="font-monospace fw-bold">${util}%</span>
+                <div class="progress flex-grow-1" style="height:6px; width:50px;">
+                  <div class="progress-bar ${util >= 75 ? 'bg-danger' : (util >= 40 ? 'bg-success' : 'bg-secondary')}" style="width:${Math.min(100, util)}%"></div>
+                </div>
+              </div>
+            </td>
+            <td>${ratingBadge}</td>
+          </tr>
+        `;
+      });
+      tbUtil.innerHTML = html;
+    }
+
+    function renderMaintFromData(data) {
+      const tbMaint = document.querySelector('#reportMaintTable tbody');
+      if (!tbMaint) return;
+      let html = '';
+      data.forEach(m => {
+        html += `
+          <tr>
+            <td class="font-monospace fw-bold">${m.maintenance_code}</td>
+            <td><span class="badge bg-light text-dark border font-monospace">${m.charger_code}</span></td>
+            <td>${m.station_name}</td>
+            <td>${m.issue}</td>
+            <td><span class="badge ${m.priority === 'Critical' ? 'bg-danger' : 'bg-warning text-dark'}">${m.priority}</span></td>
+            <td>${m.technician_name}</td>
+            <td><span class="badge ${m.status === 'Completed' ? 'bg-success' : 'bg-danger'}">${m.status}</span></td>
+          </tr>
+        `;
+      });
+      tbMaint.innerHTML = html;
+    }
+
+    function renderPeakHoursChart(customData = null) {
       const ctx = document.getElementById('peakHoursChart');
       if (!ctx) return;
+      if (peakChartInstance) peakChartInstance.destroy();
 
-      new Chart(ctx, {
+      const labels = customData ? customData.labels : ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+      const data = customData ? customData.data : [120, 80, 240, 680, 520, 480, 920, 580];
+
+      peakChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'],
+          labels: labels,
           datasets: [{
             label: 'Network Load Demand (kW)',
-            data: [120, 80, 240, 680, 520, 480, 920, 580],
+            data: data,
             borderColor: '#06b6d4',
             backgroundColor: 'rgba(6, 182, 212, 0.12)',
             fill: true,
@@ -288,21 +465,30 @@
       });
     }
 
-    function renderStationRevenueChart() {
+    function renderStationRevenueChart(customRev = null) {
       const ctx = document.getElementById('stationRevenueChart');
       if (!ctx) return;
+      if (revChartInstance) revChartInstance.destroy();
 
-      const stations = evApp.getStations();
-      const labels = stations.slice(0, 4).map(s => s.name.split(' ')[0]);
-      const data = [18720, 14200, 9600, 11500];
+      let labels = [];
+      let data = [];
 
-      new Chart(ctx, {
+      if (customRev && Array.isArray(customRev)) {
+        labels = customRev.map(s => s.name ? s.name.split(' ')[0] : 'Station');
+        data = customRev.map(s => parseFloat(s.revenue) || 0);
+      } else {
+        const stations = evApp.getStations();
+        labels = stations.slice(0, 4).map(s => s.name.split(' ')[0]);
+        data = [18720, 14200, 9600, 11500];
+      }
+
+      revChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
           labels: labels,
           datasets: [{
             data: data,
-            backgroundColor: ['#00d084', '#06b6d4', '#3b82f6', '#f59e0b']
+            backgroundColor: ['#00d084', '#06b6d4', '#3b82f6', '#f59e0b', '#8b5cf6']
           }]
         },
         options: {
@@ -440,11 +626,29 @@
       }
     }
 
-    // Academic CSV export simulation
+    // Export Active Report to CSV directly from PHP or locally
     function exportActiveReportToCSV() {
       const activeTabEl = document.querySelector('#reportTabs .nav-link.active');
-      const tabName = activeTabEl ? activeTabEl.textContent.trim() : 'EV_Report';
-      showToast('Export Generated', `Simulated export for "${tabName}" generated.`, 'success');
+      const tabId = activeTabEl ? activeTabEl.id : 'tab-sessions';
+      
+      const typeMap = {
+        'tab-sessions': 'sessions',
+        'tab-energy': 'energy',
+        'tab-revenue': 'revenue',
+        'tab-utilization': 'utilization',
+        'tab-maintenance': 'maintenance'
+      };
+
+      const reportKey = typeMap[tabId] || 'sessions';
+
+      if (window.location.protocol.startsWith('http')) {
+        // Direct RFC-compliant CSV download generated by PHP backend from MySQL
+        window.location.href = `../api/reports.php?type=${reportKey}&export=csv`;
+        showToast('CSV Download Started', `Generating real CSV export from MySQL database for ${reportKey}...`, 'success');
+      } else {
+        const tabName = activeTabEl ? activeTabEl.textContent.trim() : 'EV_Report';
+        showToast('Export Generated', `Simulated export for "${tabName}" generated.`, 'success');
+      }
     }
   </script>
 </body>

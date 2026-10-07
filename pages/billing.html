@@ -269,6 +269,10 @@
     document.addEventListener('DOMContentLoaded', () => {
       initBillingPage();
 
+      window.addEventListener('evDataSynced', () => {
+        initBillingPage();
+      });
+
       const picker = document.getElementById('invoiceSelectPicker');
       if (picker) {
         picker.addEventListener('change', (e) => {

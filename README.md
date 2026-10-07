@@ -1,54 +1,88 @@
 # EV Charging Station Management System
-
-An individual Web Application Project developed for the **Web Technology** course.
+## Academic Web Technology Course Project — Stage 1 & Stage 2 Complete
 
 * **Project Title:** EV Charging Station Management System
-* **Academic Review Stage:** LWP Review 01 (Stage 1 — Static Frontend with Meaningful Client-Side Scripting) & Stage 2 Ready
-* **Primary Focus:** Electric Vehicle Charging Infrastructure Operations & Management
+* **Academic Reviews:**
+  * **LWP Review 01:** Stage 1 — Static Web Application (HTML5, CSS3, JavaScript, Bootstrap 5)
+  * **LWP Review 02:** Stage 2 — Dynamic Web Application (PHP, MySQL, Apache XAMPP, PDO, REST APIs)
+* **Primary Focus:** Electric Vehicle Charging Infrastructure Operations & Energy Management
 
 ---
 
-## 1. Project Overview
+## 1. System Architecture (Three-Tier Enterprise Model)
 
-The **EV Charging Station Management System** is a responsive, web-based infrastructure operating platform built for companies that deploy and run electric vehicle charging networks. Rather than serving as a basic ride-booking or EV catalog website, the platform directly addresses real-world charging operations:
-
-> **Core Objective:** *"Which charger is available, when can the customer use it, how much energy will be consumed, how long will charging take, and what will the estimated cost be?"*
-> 
-> **Operator Objective:** *"How efficiently are our charging stations and individual charging bays being utilized?"*
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                   PRESENTATION TIER (FRONTEND)                         │
+│  HTML5 Semantic Structure | CSS3 Custom Electric Mobility Styling      │
+│  Bootstrap 5.3.3 Grid & UI Components | Chart.js 4 Data Visualizations │
+│  Vanilla JavaScript (ES6+) Dynamic Controllers & Event Subscribers     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Asynchronous HTTP / JSON API
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                   APPLICATION TIER (PHP 8.2 BACKEND)                   │
+│  Apache 2.4 Server (XAMPP at http://localhost/EV/)                     │
+│  PDO Database Abstraction with Prepared Statements                     │
+│  Role-Based Access Control (Admin, Station Manager, Tech, Customer)   │
+│  Double-Booking Conflict Engine (Rule 42) & Maintenance Lockout (Rule 43)│
+│  Energy Metering, Dynamic Pricing, Service Fee & GST 18% Invoicing     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Parameterized SQL Queries (3NF)
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                   DATA TIER (MYSQL 8.0 RELATIONAL DB)                  │
+│  Database Name: ev_charging_db (InnoDB Engine, utf8mb4)                │
+│  10 Normalized Tables: users, stations, pricing, chargers, vehicles,   │
+│  reservations, charging_sessions, payments, maintenance, notifications │
+└────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 2. Technology Stack (Stage 1)
-
-* **Markup:** HTML5 semantic structure
-* **Styling:** CSS3, Modern Electric Mobility Palette (Midnight Slate, Electric Emerald `#00d084`, High-Voltage Cyan `#06b6d4`)
-* **Framework:** Bootstrap 5.3.3 (Responsive Grid, Modals, Forms, Badges, Offcanvas)
-* **Client-Side Scripting:** Vanilla JavaScript (ES6+) with `localStorage` state simulation
-* **Data Visualizations:** Chart.js 4 (Energy Throughput Curves, Charger Health Breakdown, 24-hr Demand)
-* **Iconography:** Bootstrap Icons 1.11.3
-
----
-
-## 3. Project Directory Structure
+## 2. Project Directory Structure
 
 ```text
 EV/
 │
-├── index.html                      # Modern EV-themed landing page & live teaser
+├── index.html                      # Landing page with hero, live counters, feature grid
+├── setup_database.php              # 1-Click web installer & MySQL diagnostics
+├── LWP_REVIEW_01_PRESENTATION.md   # Stage 1 Review presentation guide
+├── LWP_REVIEW_02_PRESENTATION.md   # Stage 2 Dynamic review presentation guide
+├── VIVA_QUESTIONS_GUIDE.md         # Comprehensive viva exam questions & answers
+│
+├── config/
+│   ├── db.php                      # PDO connection helper (localhost, root, "")
+│   └── session.php                 # PHP session management & role authorization
+│
+├── api/                            # RESTful JSON API Endpoints
+│   ├── auth.php                    # Login, register, logout, session check & role switch
+│   ├── dashboard.php               # Real-time aggregated KPIs & utilization metrics
+│   ├── stations.php                # Stations directory & CRUD operations
+│   ├── chargers.php                # Hardware bay inventory & live status updater
+│   ├── vehicles.php                # Customer EV fleet & battery specs
+│   ├── reservations.php            # Double-booking conflict & maintenance lockout engine
+│   ├── charging.php                # Session lifecycle, timer & energy metering calculation
+│   ├── billing.php                 # Itemized GST tax invoices & payment settlements
+│   ├── maintenance.php             # Work orders, fault dispatch & auto bay lockout
+│   └── reports.php                 # 5 Academic reports & RFC CSV export generator
+│
+├── database/
+│   └── ev_charging_db.sql          # 10 Normalized tables & seed dataset
 │
 ├── pages/
 │   ├── dashboard.html              # Central KPI dashboard & analytics
-│   ├── stations.html               # Charging hub directory & filtering
+│   ├── stations.html               # 24 Charging hubs directory & filtering
 │   ├── station-details.html        # Detailed station bay visual board
-│   ├── chargers.html               # Charger hardware inventory & status control
-│   ├── find-charger.html           # Geospatial & compatibility search
+│   ├── chargers.html               # 20+ Hardware bays inventory & status control
+│   ├── find-charger.html           # Geospatial, power & connector search
 │   ├── reservations.html           # Conflict-free slot reservation system
-│   ├── vehicles.html               # Customer EV fleet & battery management
-│   ├── calculator.html             # Smart Charging Calculator (Feature 34)
+│   ├── vehicles.html               # Luxury & standard EV fleet management
+│   ├── calculator.html             # Smart Charging Calculator (Battery, kW, Time, ₹)
 │   ├── charging-session.html       # Live charging simulation with dynamic timers
 │   ├── billing.html                # Itemized GST tax invoices & payment simulation
 │   ├── maintenance.html            # Fault dispatch & auto-lockout tickets
-│   ├── reports.html                # 5 Academic reports & CSV export
+│   ├── reports.html                # 5 Academic reports with CSV download
 │   └── login.html                  # Role-based 1-click authentication demo
 │
 ├── css/
@@ -56,94 +90,71 @@ EV/
 │   ├── dashboard.css               # Sidebar, KPI cards, visual charger boards
 │   └── responsive.css              # Breakpoints for desktop, tablet & mobile
 │
-├── js/
-│   ├── app.js                      # Central state manager, seed data & helpers
-│   ├── dashboard.js                # KPI calculations, Chart.js & recent tables
-│   ├── stations.js                 # Station filtering & new station creation
-│   ├── chargers.js                 # Utilization score calculation & status toggles
-│   ├── reservations.js             # Double-booking conflict detection engine
-│   ├── vehicles.js                 # Vehicle presets & battery level visualizer
-│   ├── calculator.js               # Mathematical formulas & charging estimators
-│   ├── charging.js                 # Live timer session simulator & kWh counter
-│   └── maintenance.js              # Fault tickets, priority & charger auto-lock
-│
-├── database/                       # Stage 2 MySQL schema preparation
-│   └── ev_charging_db.sql
-│
-├── LWP_REVIEW_01_PRESENTATION.md   # Complete 12-slide presentation notes
-├── VIVA_QUESTIONS_GUIDE.md         # Viva exam questions & concise answers
-└── README.md
+└── js/
+    ├── app.js                      # Core state manager, backend sync & utilities
+    ├── dashboard.js                # KPI calculations & Chart.js instances
+    ├── stations.js                 # Station list & filter controller
+    ├── chargers.js                 # Charger bay grid & utilization rating
+    ├── reservations.js             # Overlapping time conflict validator
+    ├── vehicles.js                 # Luxury EV presets & battery visualizer
+    ├── calculator.js               # Mathematical formulas & charge duration estimator
+    ├── charging.js                 # Live timer simulator & kWh accumulator
+    └── maintenance.js              # Fault tickets, priority & charger auto-lock
 ```
 
 ---
 
-## 4. Key Features & Academic Requirements Satisfied
+## 3. How to Run the Project in XAMPP (Stage 2)
 
-### A. Role-Based Access Simulation (Section 5)
-Four distinct user roles are simulated via a persistent switcher:
-1. **Admin (`admin@evcharge.com`):** Global network management, station/charger inventory, financial reports, user access.
-2. **Station Manager (`manager@evcharge.com`):** Local hub oversight, charger status distribution, station utilization & revenue.
-3. **Technician (`tech@evcharge.com`):** Fault dispatch work orders, hardware status resolution, auto-locking faulty bays.
-4. **Customer (`customer@evcharge.com`):** Station search, EV registration, conflict-free booking, session simulator, digital billing.
+### Prerequisites:
+* **XAMPP** installed with Apache and MySQL services running.
 
-### B. Smart Charging Calculator (Section 16, 17, 18, 34)
-* **Inputs:** Vehicle Battery Capacity (kWh), Current State of Charge (%), Target SoC (%), Charger Power (kW), Station Tariff (₹/kWh).
-* **Formulas:**
-  $$\text{Energy Required (kWh)} = \text{Battery Capacity} \times \frac{\text{Target \%} - \text{Current \%}}{100}$$
-  $$\text{Ideal Charging Time} = \frac{\text{Energy Required}}{\text{Charger Power}}$$
-  $$\text{Estimated Cost (₹)} = \text{Energy Required} \times \text{Price per kWh}$$
-* **Interactive Feature:** Visual dynamic battery frame displaying level progression and color shifts.
+### Quick Setup Steps:
+1. Ensure the project is located in `C:\xampp\htdocs\EV` (or junctioned).
+2. Start **Apache** and **MySQL** in the XAMPP Control Panel.
+3. Open your browser and navigate to:
+   ```text
+   http://localhost/EV/setup_database.php
+   ```
+   * The setup script will automatically create the database `ev_charging_db`, import all 10 normalized tables, insert default seed data, and verify system health.
+4. Launch the application:
+   * **Homepage:** `http://localhost/EV/index.html`
+   * **Dashboard:** `http://localhost/EV/pages/dashboard.html`
+   * **Slot Reservations:** `http://localhost/EV/pages/reservations.html`
+   * **Reports & CSV Export:** `http://localhost/EV/pages/reports.html`
 
-### C. Visual Charger Availability Board (Section 35)
-Dynamic visual grid displaying every charger bay in the station:
-* **Green:** Available (ready for connection)
-* **Cyan:** Charging (with real-time progress bar % & power draw)
-* **Amber:** Reserved (locked for upcoming booking window)
-* **Red:** Maintenance (hardware ticket active; locked from booking)
-* **Grey:** Offline (telemetry disconnected)
+---
 
-### D. Double-Booking Conflict Prevention (Section 42 & 43)
-Client-side reservation validation algorithm:
-$$\text{Same Charger} + \text{Same Date} + \text{Overlapping Time Window} = \textbf{Reservation Conflict}$$
-Prevents scheduling when a collision occurs and locks out any charger currently flagged as **Maintenance** or **Offline**.
+## 4. Academic Features Implemented (Stage 2)
 
-### E. Live Charging Session Simulation (Section 20)
-* Dynamic JavaScript timer simulating 1s = ~1 minute of rapid DC charging.
-* Visual battery state increments, energy delivered (kWh) accumulates, power fluctuation simulates realistic BMS thermal throttling.
-* "Complete Session & Bill" automatically terminates session, creates an itemized digital invoice, logs session into history, and frees the charger back to **Available**.
+### A. Double-Booking Conflict Prevention (Rule 42)
+Implemented directly in SQL via `api/reservations.php`:
+$$\text{Overlap Condition: } (\text{New Start} < \text{Existing End}) \land (\text{New End} > \text{Existing Start})$$
+Rejects conflicting bookings with HTTP 409 Conflict.
 
-### F. Charger Utilization Score (Section 22)
-Formula implemented across all chargers and hubs:
-$$\text{Utilization (\%)} = \frac{\text{Charging Hours}}{\text{Available Operating Hours}} \times 100$$
-Categorized into **High** ($\ge 75\%$), **Normal** ($40-74\%$), and **Low** ($< 40\%$).
+### B. Hardware Fault Auto-Lockout (Rule 43)
+When a maintenance issue is logged via `api/maintenance.php`, the target charger's status automatically switches to `'Maintenance'`, preventing any customer reservations until a technician completes the work order.
 
-### G. Academic Reports Module (Section 32 & 55)
+### C. 5 Academic Reports with Real CSV Export
+Available in `pages/reports.html` and `api/reports.php`:
 1. **Charging Sessions Report**
 2. **Energy Consumption Report**
 3. **Station Revenue Report**
 4. **Charger Utilization Report**
 5. **Maintenance Tickets Report**
+* Includes 1-click **Export Active Report (CSV)** that streams a real `.csv` spreadsheet file from MySQL.
+
+### D. Comprehensive Luxury Vehicle Fleet & Coimbatore Network
+* **Vehicles:** Porsche Taycan 4S, Mercedes-Benz EQS 580, BMW iX xDrive50, Audi e-tron GT, Tesla Model 3 Long Range, Volvo XC40 Recharge, Jaguar I-PACE, Tata Nexon EV, MG ZS EV, Mahindra XUV400.
+* **Stations:** 20+ charging hubs across Coimbatore (Avinashi Road, Gandhipuram, RS Puram, Peelamedu, Saravanampatti IT Park, Prozone Mall, Brookefields Mall, Coimbatore Airport, etc.) plus Chennai and Bengaluru hubs.
 
 ---
 
-## 5. How to Run the Project
-
-1. Clone or open the project folder `EV` in your favorite code editor (e.g. VS Code).
-2. Simply double click `index.html` to open in Google Chrome or Microsoft Edge.
-3. Or serve using any local HTTP server:
-   ```bash
-   # Using Python 3:
-   python -m http.server 8080
-   # Open browser at: http://localhost:8080
-   ```
-4. Explore all modules:
-   * Click **Portal Login** or use the top-right **Role Switcher** to test Admin, Manager, Technician, or Customer views.
-   * Try the **Smart Charging Calculator** on the home page or dedicated calculator page.
-   * Go to **Slot Reservations** and attempt to book a slot; observe conflict detection and maintenance locks.
-   * Go to **Charging Sessions** and run the live charging simulation.
+## 5. Security Architecture
+* **PDO Prepared Statements:** Parameterized queries used across all 10 endpoints.
+* **Password Hashing:** Passwords encrypted using `password_hash($pass, PASSWORD_BCRYPT)`.
+* **RBAC:** Session-based authentication enforcing Admin, Station Manager, Technician, and Customer permissions.
+* **Input Sanitization:** Server-side validation and type-casting.
 
 ---
-
-## 6. Stage 2 (Dynamic Website with MySQL) Readiness
-
-The data structure in `js/app.js` is 1:1 normalized with the Stage 2 relational database schema provided in `database/ev_charging_db.sql`. When transitioning to Stage 2 (LWP Review 02), the frontend remains identical while AJAX/Fetch calls replace `localStorage` with Servlets/JSP or PHP database endpoints.
+**Status:** 100% Complete, Tested, and Ready for Academic Submission and Viva Defense.

@@ -716,36 +716,233 @@ class EVStateManager {
     return target;
   }
 
+  isHttp() {
+    return window.location.protocol.startsWith('http');
+  }
+
+  getApiBase() {
+    const p = window.location.pathname;
+    if (p.includes('/pages/')) return '../api';
+    return 'api';
+  }
+
+  async syncWithBackend() {
+    if (!this.isHttp()) return;
+    try {
+      const base = this.getApiBase();
+      const [resStn, resChg, resVeh, resRes, resSes, resMnt] = await Promise.allSettled([
+        fetch(`${base}/stations.php`).then(r => r.json()),
+        fetch(`${base}/chargers.php`).then(r => r.json()),
+        fetch(`${base}/vehicles.php`).then(r => r.json()),
+        fetch(`${base}/reservations.php`).then(r => r.json()),
+        fetch(`${base}/charging.php`).then(r => r.json()),
+        fetch(`${base}/maintenance.php`).then(r => r.json())
+      ]);
+
+      if (resStn.status === 'fulfilled' && resStn.value.success && Array.isArray(resStn.value.data)) {
+        const mappedStations = resStn.value.data.map(s => ({
+          id: s.station_code || ('STN-' + String(s.station_id).padStart(3, '0')),
+          dbId: s.station_id,
+          name: s.station_name,
+          address: s.address,
+          city: s.city,
+          contact: s.contact_number,
+          operatingHours: s.operating_hours,
+          status: s.status,
+          totalChargers: parseInt(s.total_chargers) || 4,
+          pricingRate: parseFloat(s.price_per_kwh) || 15.0
+        }));
+        if (mappedStations.length > 0) this.set(STORAGE_KEYS.STATIONS, mappedStations);
+      }
+
+      if (resChg.status === 'fulfilled' && resChg.value.success && Array.isArray(resChg.value.data)) {
+        const mappedChargers = resChg.value.data.map(c => ({
+          id: c.charger_code,
+          dbId: c.charger_id,
+          stationId: c.station_code || ('STN-' + String(c.station_id).padStart(3, '0')),
+          stationDbId: c.station_id,
+          code: c.charger_code,
+          connectorType: c.connector_type,
+          powerKw: parseFloat(c.charging_power),
+          status: c.status,
+          installedDate: c.installed_date,
+          totalHoursUsed: parseFloat(c.total_hours_used) || 0
+        }));
+        if (mappedChargers.length > 0) this.set(STORAGE_KEYS.CHARGERS, mappedChargers);
+      }
+
+      if (resVeh.status === 'fulfilled' && resVeh.value.success && Array.isArray(resVeh.value.data)) {
+        const mappedVehicles = resVeh.value.data.map(v => ({
+          id: 'VEH-' + String(v.vehicle_id).padStart(3, '0'),
+          dbId: v.vehicle_id,
+          userId: 'USR-' + String(v.user_id).padStart(3, '0'),
+          model: v.vehicle_model,
+          number: v.vehicle_number,
+          batteryCapacity: parseFloat(v.battery_capacity),
+          currentPercentage: parseInt(v.current_battery_percentage) || 50,
+          connectorType: v.connector_type,
+          maxChargingPower: parseFloat(v.max_charging_power)
+        }));
+        if (mappedVehicles.length > 0) this.set(STORAGE_KEYS.VEHICLES, mappedVehicles);
+      }
+
+      if (resRes.status === 'fulfilled' && resRes.value.success && Array.isArray(resRes.value.data)) {
+        const mappedRes = resRes.value.data.map(r => ({
+          id: r.reservation_code,
+          dbId: r.reservation_id,
+          userId: 'USR-' + String(r.user_id).padStart(3, '0'),
+          customerName: r.customer_name,
+          stationId: r.station_code || ('STN-' + String(r.station_id).padStart(3, '0')),
+          stationName: r.station_name,
+          chargerId: r.charger_code,
+          chargerCode: r.charger_code,
+          vehicleId: 'VEH-' + String(r.vehicle_id).padStart(3, '0'),
+          vehicleName: `${r.vehicle_model} (${r.vehicle_number})`,
+          date: r.reservation_date,
+          startTime: (r.start_time || '').substring(0, 5),
+          duration: parseInt(r.duration_minutes),
+          status: r.status,
+          createdAt: r.created_at
+        }));
+        if (mappedRes.length > 0) this.set(STORAGE_KEYS.RESERVATIONS, mappedRes);
+      }
+
+      if (resSes.status === 'fulfilled' && resSes.value.success && Array.isArray(resSes.value.data)) {
+        const mappedSessions = resSes.value.data.map(s => ({
+          id: s.session_code,
+          dbId: s.session_id,
+          customerName: s.customer_name,
+          stationId: s.station_code || ('STN-' + String(s.station_id).padStart(3, '0')),
+          stationName: s.station_name,
+          chargerCode: s.charger_code,
+          vehicleName: `${s.vehicle_model} (${s.vehicle_number})`,
+          startTime: s.start_time,
+          endTime: s.end_time,
+          energyConsumed: parseFloat(s.energy_consumed),
+          durationMinutes: parseInt(s.duration_minutes),
+          cost: parseFloat(s.energy_cost),
+          serviceFee: parseFloat(s.service_fee),
+          tax: parseFloat(s.tax_amount),
+          total: parseFloat(s.total_cost),
+          status: s.status,
+          paymentStatus: s.payment_status || 'Paid'
+        }));
+        if (mappedSessions.length > 0) this.set(STORAGE_KEYS.SESSIONS, mappedSessions);
+      }
+
+      if (resMnt.status === 'fulfilled' && resMnt.value.success && Array.isArray(resMnt.value.data)) {
+        const mappedMnt = resMnt.value.data.map(m => ({
+          id: m.maintenance_code,
+          dbId: m.maintenance_id,
+          chargerId: m.charger_code,
+          chargerCode: m.charger_code,
+          stationName: m.station_name,
+          technicianName: m.technician_name,
+          issue: m.issue,
+          priority: m.priority,
+          reportedDate: m.reported_date,
+          status: m.status,
+          remarks: m.remarks
+        }));
+        if (mappedMnt.length > 0) this.set(STORAGE_KEYS.MAINTENANCE, mappedMnt);
+      }
+
+      window.dispatchEvent(new CustomEvent('evDataSynced'));
+    } catch (e) {
+      console.warn('Backend sync failed, continuing in offline/cached mode:', e);
+    }
+  }
+
   // Stations
   getStations() { return this.get(STORAGE_KEYS.STATIONS); }
-  getStationById(id) { return this.getStations().find(s => s.id === id); }
-  saveStation(station) {
+  getStationById(id) { return this.getStations().find(s => s.id === id || s.dbId === id); }
+  async saveStation(station) {
     const list = this.getStations();
     const idx = list.findIndex(s => s.id === station.id);
     if (idx >= 0) list[idx] = station;
     else list.push(station);
     this.set(STORAGE_KEYS.STATIONS, list);
+
+    if (this.isHttp()) {
+      try {
+        const base = this.getApiBase();
+        await fetch(`${base}/stations.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            station_name: station.name,
+            address: station.address,
+            city: station.city,
+            contact_number: station.contact,
+            operating_hours: station.operatingHours,
+            total_chargers: station.totalChargers,
+            status: station.status,
+            price_per_kwh: station.pricingRate || 15.0
+          })
+        });
+      } catch (err) {
+        console.warn('Async station sync error:', err);
+      }
+    }
   }
 
   // Chargers
   getChargers() { return this.get(STORAGE_KEYS.CHARGERS); }
-  getChargerById(id) { return this.getChargers().find(c => c.id === id); }
+  getChargerById(id) { return this.getChargers().find(c => c.id === id || c.code === id || c.dbId === id); }
   getChargersByStation(stationId) { return this.getChargers().filter(c => c.stationId === stationId); }
-  saveCharger(charger) {
+  async saveCharger(charger) {
     const list = this.getChargers();
     const idx = list.findIndex(c => c.id === charger.id);
     if (idx >= 0) list[idx] = charger;
     else list.push(charger);
     this.set(STORAGE_KEYS.CHARGERS, list);
     this.updateStationCounts(charger.stationId);
+
+    if (this.isHttp()) {
+      try {
+        const base = this.getApiBase();
+        const stn = this.getStationById(charger.stationId);
+        await fetch(`${base}/chargers.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            station_id: stn?.dbId || 1,
+            charger_code: charger.code,
+            connector_type: charger.connectorType,
+            charging_power: charger.powerKw,
+            status: charger.status,
+            installed_date: charger.installedDate || new Date().toISOString().split('T')[0]
+          })
+        });
+      } catch (err) {
+        console.warn('Async charger sync error:', err);
+      }
+    }
   }
 
-  updateChargerStatus(chargerId, status) {
+  async updateChargerStatus(chargerId, status) {
     const list = this.getChargers();
-    const c = list.find(item => item.id === chargerId);
+    const c = list.find(item => item.id === chargerId || item.code === chargerId || item.dbId === chargerId);
     if (c) {
       c.status = status;
       this.set(STORAGE_KEYS.CHARGERS, list);
+    }
+
+    if (this.isHttp() && c) {
+      try {
+        const base = this.getApiBase();
+        await fetch(`${base}/chargers.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update_status',
+            charger_id: c.dbId || 1,
+            status: status
+          })
+        });
+      } catch (err) {
+        console.warn('Async charger status sync error:', err);
+      }
     }
   }
 
@@ -761,26 +958,80 @@ class EVStateManager {
 
   // Vehicles
   getVehicles() { return this.get(STORAGE_KEYS.VEHICLES); }
-  saveVehicle(veh) {
+  async saveVehicle(veh) {
     const list = this.getVehicles();
     const idx = list.findIndex(v => v.id === veh.id);
     if (idx >= 0) list[idx] = veh;
     else list.push(veh);
     this.set(STORAGE_KEYS.VEHICLES, list);
+
+    if (this.isHttp()) {
+      try {
+        const base = this.getApiBase();
+        await fetch(`${base}/vehicles.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: 4,
+            vehicle_model: veh.model,
+            vehicle_number: veh.number,
+            battery_capacity: veh.batteryCapacity,
+            current_battery_percentage: veh.currentPercentage,
+            connector_type: veh.connectorType,
+            max_charging_power: veh.maxChargingPower
+          })
+        });
+      } catch (err) {
+        console.warn('Async vehicle sync error:', err);
+      }
+    }
   }
 
   // Reservations
   getReservations() { return this.get(STORAGE_KEYS.RESERVATIONS); }
-  saveReservation(res) {
+  async saveReservation(res) {
     const list = this.getReservations();
     list.unshift(res);
     this.set(STORAGE_KEYS.RESERVATIONS, list);
     this.updateChargerStatus(res.chargerId, 'Reserved');
+
+    if (this.isHttp()) {
+      try {
+        const base = this.getApiBase();
+        const ch = this.getChargerById(res.chargerId);
+        const stn = this.getStationById(res.stationId);
+        const veh = this.getVehicles().find(v => v.id === res.vehicleId);
+
+        const payload = {
+          user_id: 4,
+          vehicle_id: veh?.dbId || 1,
+          station_id: stn?.dbId || 1,
+          charger_id: ch?.dbId || 1,
+          reservation_date: res.date,
+          start_time: res.startTime,
+          duration_minutes: res.duration
+        };
+
+        const resp = await fetch(`${base}/reservations.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await resp.json();
+        if (!result.success) {
+          showToast('Database Notice', result.message || 'Conflict detected in MySQL', 'warning');
+        } else {
+          console.log('Reservation saved to MySQL database successfully.');
+        }
+      } catch (err) {
+        console.warn('Async MySQL reservation sync error:', err);
+      }
+    }
   }
 
   checkConflict(chargerId, date, startTime, durationMins) {
     const reservations = this.getReservations().filter(
-      r => r.chargerId === chargerId && r.date === date && r.status !== 'Cancelled'
+      r => (r.chargerId === chargerId || r.chargerCode === chargerId) && r.date === date && r.status !== 'Cancelled'
     );
     const newStart = this.timeToMinutes(startTime);
     const newEnd = newStart + parseInt(durationMins);
@@ -803,17 +1054,40 @@ class EVStateManager {
 
   // Sessions
   getSessions() { return this.get(STORAGE_KEYS.SESSIONS); }
-  saveSession(sess) {
+  async saveSession(sess) {
     const list = this.getSessions();
     const idx = list.findIndex(s => s.id === sess.id);
     if (idx >= 0) list[idx] = sess;
     else list.unshift(sess);
     this.set(STORAGE_KEYS.SESSIONS, list);
+
+    if (this.isHttp() && sess.status === 'Completed') {
+      try {
+        const base = this.getApiBase();
+        const ch = this.getChargerById(sess.chargerCode || sess.chargerId);
+        const stn = this.getStationById(sess.stationId);
+        await fetch(`${base}/charging.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'complete',
+            session_id: sess.dbId || 1,
+            user_id: 4,
+            station_id: stn?.dbId || 1,
+            charger_id: ch?.dbId || 1,
+            energy_consumed: sess.energyConsumed,
+            duration_minutes: sess.durationMinutes
+          })
+        });
+      } catch (err) {
+        console.warn('Async session sync error:', err);
+      }
+    }
   }
 
   // Maintenance
   getMaintenance() { return this.get(STORAGE_KEYS.MAINTENANCE); }
-  saveMaintenance(mnt) {
+  async saveMaintenance(mnt) {
     const list = this.getMaintenance();
     const idx = list.findIndex(m => m.id === mnt.id);
     if (idx >= 0) list[idx] = mnt;
@@ -824,6 +1098,27 @@ class EVStateManager {
       this.updateChargerStatus(mnt.chargerId, 'Maintenance');
     } else if (mnt.status === 'Completed') {
       this.updateChargerStatus(mnt.chargerId, 'Available');
+    }
+
+    if (this.isHttp()) {
+      try {
+        const base = this.getApiBase();
+        const ch = this.getChargerById(mnt.chargerId);
+        await fetch(`${base}/maintenance.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'report',
+            charger_id: ch?.dbId || 1,
+            issue: mnt.issue,
+            priority: mnt.priority,
+            technician_id: 3,
+            remarks: mnt.remarks || ''
+          })
+        });
+      } catch (err) {
+        console.warn('Async maintenance sync error:', err);
+      }
     }
   }
 
@@ -929,8 +1224,13 @@ function showToast(title, message, type = 'info') {
   }
 }
 
-// Role Switcher setup on page load
+// Role Switcher & Initialization setup on page load
 document.addEventListener('DOMContentLoaded', () => {
+  // Sync with MySQL database if running on Apache
+  if (evApp.isHttp()) {
+    evApp.syncWithBackend();
+  }
+
   const user = evApp.getCurrentUser();
   const roleDisplay = document.querySelectorAll('.current-user-role-display');
   roleDisplay.forEach(el => el.textContent = user.role.replace('_', ' '));

@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
   renderRecentSessionsTable();
   renderStationPerformanceTable();
   renderNotificationsModal();
+
+  window.addEventListener('evDataSynced', () => {
+    renderDashboardKPIs();
+    renderLiveChargerBoard();
+    renderRecentSessionsTable();
+    renderStationPerformanceTable();
+  });
 });
 
 /**
